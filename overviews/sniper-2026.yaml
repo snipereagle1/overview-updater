@@ -4612,6 +4612,7 @@ presets:
           - 1312
           - 1548
           - 2005
+          - 4810
   - - defaultmining
     - - - groups
         - - 9
