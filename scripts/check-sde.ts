@@ -20,12 +20,13 @@ import path from "path";
 import { fileURLToPath } from "url";
 import yaml from "js-yaml";
 import { Octokit } from "@octokit/rest";
-import { WATCHED_CATEGORY_IDS, WATCHED_CATEGORIES } from "./category-config.js";
+import { WATCHED_CATEGORY_IDS, WATCHED_CATEGORIES } from "./category-config";
 import {
   fetchCurrentBuildNumber,
   loadGroupsMap,
   type Group,
-} from "./sde-client.js";
+} from "./sde-client";
+import { removeGroupIds } from "./yaml-edit";
 
 // ---------------------------------------------------------------------------
 // CLI flags
@@ -110,41 +111,6 @@ function extractPresets(doc: YamlValue): PresetRef[] {
   return refs;
 }
 
-function stripGroupIds(doc: YamlValue, idsToRemove: Set<number>): void {
-  if (!doc || typeof doc !== "object" || Array.isArray(doc)) return;
-  const obj = doc as { [k: string]: YamlValue };
-  const presets = obj["presets"];
-  if (!Array.isArray(presets)) return;
-
-  for (const presetEntry of presets) {
-    if (!Array.isArray(presetEntry) || presetEntry.length < 2) continue;
-    const presetData = presetEntry[1];
-    if (!Array.isArray(presetData)) continue;
-
-    for (const kv of presetData) {
-      if (!Array.isArray(kv) || kv.length < 2) continue;
-      if (kv[0] === "groups" && Array.isArray(kv[1])) {
-        const filtered = (kv[1] as number[]).filter((id) => !idsToRemove.has(id));
-        kv[1] = filtered;
-      }
-    }
-  }
-}
-
-// ---------------------------------------------------------------------------
-// YAML dump options that match EVE's expected format
-// ---------------------------------------------------------------------------
-
-const YAML_DUMP_OPTIONS: yaml.DumpOptions = {
-  indent: 2,
-  lineWidth: -1,
-  noRefs: true,
-  flowLevel: -1,
-  sortKeys: false,
-  quotingType: "'",
-  forceQuotes: false,
-};
-
 // ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
@@ -184,10 +150,9 @@ async function main(): Promise<void> {
   interface FileResult {
     filePath: string;
     fileName: string;
-    doc: YamlValue;
     presets: PresetRef[];
     staleIds: Map<number, string>;
-    modified: boolean;
+    modifiedRaw: string | null; // null = unchanged
   }
 
   const fileResults: FileResult[] = [];
@@ -215,13 +180,13 @@ async function main(): Promise<void> {
       }
     }
 
-    let modified = false;
+    let modifiedRaw: string | null = null;
     if (staleIds.size > 0) {
-      stripGroupIds(doc, new Set(staleIds.keys()));
-      modified = true;
+      const { result, changed } = removeGroupIds(raw, new Set(staleIds.keys()));
+      if (changed) modifiedRaw = result;
     }
 
-    fileResults.push({ filePath, fileName: path.basename(filePath), doc, presets, staleIds, modified });
+    fileResults.push({ filePath, fileName: path.basename(filePath), presets, staleIds, modifiedRaw });
   }
 
   // 5. New group detection
@@ -247,7 +212,7 @@ async function main(): Promise<void> {
 
   newGroups.sort((a, b) => a.categoryName.localeCompare(b.categoryName) || a.name.localeCompare(b.name));
 
-  const anyStale = fileResults.some((r) => r.staleIds.size > 0);
+  const anyStale = fileResults.some((r) => r.modifiedRaw !== null);
   const anyNew = newGroups.length > 0;
 
   // Build PR body regardless (used for both dry-run output and real PR)
@@ -287,9 +252,8 @@ async function main(): Promise<void> {
 
   // 6. Write modified YAML files + update build number
   for (const result of fileResults) {
-    if (result.modified) {
-      const dumped = yaml.dump(result.doc, YAML_DUMP_OPTIONS);
-      fs.writeFileSync(result.filePath, dumped, "utf8");
+    if (result.modifiedRaw !== null) {
+      fs.writeFileSync(result.filePath, result.modifiedRaw, "utf8");
       console.log(`Updated ${result.fileName} (removed ${result.staleIds.size} stale IDs)`);
     }
   }
@@ -322,10 +286,10 @@ async function main(): Promise<void> {
 
   const filesToCommit: { path: string; content: string }[] = [];
   for (const result of fileResults) {
-    if (result.modified) {
+    if (result.modifiedRaw !== null) {
       filesToCommit.push({
         path: `overviews/${result.fileName}`,
-        content: fs.readFileSync(result.filePath, "utf8"),
+        content: result.modifiedRaw,
       });
     }
   }

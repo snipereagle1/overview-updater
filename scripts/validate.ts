@@ -13,7 +13,7 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import yaml from "js-yaml";
-import { fetchCurrentBuildNumber, loadGroupsMap } from "./sde-client.js";
+import { fetchCurrentBuildNumber, loadGroupsMap } from "./sde-client";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const OVERVIEWS_DIR = path.join(REPO_ROOT, "overviews");

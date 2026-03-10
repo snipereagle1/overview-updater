@@ -10,6 +10,7 @@ import { fileURLToPath } from "url";
 import https from "https";
 import http from "http";
 import yauzl from "yauzl";
+import yaml from "js-yaml";
 
 // ---------------------------------------------------------------------------
 // Types (exported for consumers)
@@ -176,6 +177,33 @@ async function downloadGroupsMap(buildNumber: number): Promise<Map<number, Group
       zipfile.on("error", reject);
     });
   });
+}
+
+// ---------------------------------------------------------------------------
+// YAML helpers (shared across scripts)
+// ---------------------------------------------------------------------------
+
+export const YAML_DUMP_OPTIONS: import("js-yaml").DumpOptions = {
+  indent: 2,
+  lineWidth: -1,
+  noRefs: true,
+  flowLevel: -1,
+  sortKeys: false,
+  quotingType: "'",
+  forceQuotes: false,
+  noArrayIndent: true,
+};
+
+/** Detect whether a raw file uses CRLF line endings. */
+export function detectLineEnding(raw: string): "\r\n" | "\n" {
+  return raw.includes("\r\n") ? "\r\n" : "\n";
+}
+
+/** Dump YAML and restore the original file's line endings. */
+export function dumpYaml(doc: unknown, originalRaw: string): string {
+  const eol = detectLineEnding(originalRaw);
+  const dumped = yaml.dump(doc, YAML_DUMP_OPTIONS);
+  return eol === "\r\n" ? dumped.replace(/\n/g, "\r\n") : dumped;
 }
 
 // ---------------------------------------------------------------------------

@@ -26,9 +26,10 @@
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import yaml from "js-yaml";
+import yaml from "js-yaml"; // still needed for extractPresetInfo
 import { Octokit } from "@octokit/rest";
-import { fetchCurrentBuildNumber, loadGroupsMap, type Group } from "./sde-client.js";
+import { fetchCurrentBuildNumber, loadGroupsMap, type Group } from "./sde-client";
+import { addGroupId, stripColorTags } from "./yaml-edit";
 
 // ---------------------------------------------------------------------------
 // Paths
@@ -139,37 +140,20 @@ function parseCommands(body: string): ParsedCommand[] {
 }
 
 // ---------------------------------------------------------------------------
-// YAML helpers
+// YAML helpers (parse only — writing is done surgically)
 // ---------------------------------------------------------------------------
 
-/** Strip EVE color tags for matching: <color=0xFF...>text</color> → text */
-function stripColorTags(s: string): string {
-  return s.replace(/<color=[^>]+>/gi, "").replace(/<\/color>/gi, "").trim();
-}
-
-const YAML_DUMP_OPTIONS: yaml.DumpOptions = {
-  indent: 2,
-  lineWidth: -1,
-  noRefs: true,
-  flowLevel: -1,
-  sortKeys: false,
-  quotingType: "'",
-  forceQuotes: false,
-};
-
-interface PresetRef {
+interface PresetInfo {
   name: string;
-  groupsList: YamlValue[]; // direct reference to the mutable groups array
+  groupIds: number[];
 }
 
-/** Extract all presets with a direct reference to their groups array. */
-function getPresetRefs(doc: YamlValue): PresetRef[] {
-  const refs: PresetRef[] = [];
-  if (!doc || typeof doc !== "object" || Array.isArray(doc)) return refs;
-
+function extractPresetInfo(doc: YamlValue): PresetInfo[] {
+  const infos: PresetInfo[] = [];
+  if (!doc || typeof doc !== "object" || Array.isArray(doc)) return infos;
   const obj = doc as { [k: string]: YamlValue };
   const presets = obj["presets"];
-  if (!Array.isArray(presets)) return refs;
+  if (!Array.isArray(presets)) return infos;
 
   for (const presetEntry of presets) {
     if (!Array.isArray(presetEntry) || presetEntry.length < 2) continue;
@@ -177,23 +161,18 @@ function getPresetRefs(doc: YamlValue): PresetRef[] {
     const presetData = presetEntry[1];
     if (!Array.isArray(presetData)) continue;
 
+    const groupIds: number[] = [];
     for (const kv of presetData) {
       if (!Array.isArray(kv) || kv.length < 2) continue;
       if (kv[0] === "groups" && Array.isArray(kv[1])) {
-        refs.push({ name, groupsList: kv[1] as YamlValue[] });
+        for (const id of kv[1]) {
+          if (typeof id === "number") groupIds.push(id);
+        }
       }
     }
+    infos.push({ name, groupIds });
   }
-  return refs;
-}
-
-/** Add groupId to a preset's groups list if not already present. Returns true if added. */
-function addToGroups(groupsList: YamlValue[], groupId: number): boolean {
-  if (groupsList.includes(groupId)) return false;
-  groupsList.push(groupId);
-  // Keep sorted ascending for consistency
-  groupsList.sort((a, b) => (a as number) - (b as number));
-  return true;
+  return infos;
 }
 
 // ---------------------------------------------------------------------------
@@ -203,8 +182,8 @@ function addToGroups(groupsList: YamlValue[], groupId: number): boolean {
 interface OverviewFile {
   filePath: string;
   fileName: string;
-  doc: YamlValue;
-  presets: PresetRef[];
+  raw: string;
+  presets: PresetInfo[];
 }
 
 function applyCommand(
@@ -221,42 +200,39 @@ function applyCommand(
   }
 
   for (const file of files) {
-    const addedToPresets: string[] = [];
-
+    // Build a matcher for this command based on the parsed preset info
+    const matchingPresetNames = new Set<string>();
     for (const preset of file.presets) {
       let shouldAdd = false;
-
       if (cmd.mode.type === "to-preset") {
         const strippedName = stripColorTags(preset.name).toLowerCase();
         shouldAdd = strippedName.includes(cmd.mode.pattern.toLowerCase());
       } else if (cmd.mode.type === "like") {
-        shouldAdd = preset.groupsList.includes(cmd.mode.likeId);
+        shouldAdd = preset.groupIds.includes(cmd.mode.likeId);
       } else if (cmd.mode.type === "to-category") {
-        // Check if any group in this preset belongs to the target category
         const targetCategoryId = cmd.mode.categoryId;
-        shouldAdd = (preset.groupsList as number[]).some((id) => {
-          const g = groupsMap.get(id);
-          return g?.categoryID === targetCategoryId;
-        });
+        shouldAdd = preset.groupIds.some((id) => groupsMap.get(id)?.categoryID === targetCategoryId);
       }
-
-      if (shouldAdd && addToGroups(preset.groupsList, cmd.groupId)) {
-        addedToPresets.push(preset.name);
-      }
+      if (shouldAdd) matchingPresetNames.add(preset.name);
     }
 
+    if (matchingPresetNames.size === 0) continue;
+
+    // Apply surgically
+    const { result, addedToPresets } = addGroupId(
+      file.raw,
+      cmd.groupId,
+      (presetName) => matchingPresetNames.has(presetName)
+    );
+
     if (addedToPresets.length > 0) {
+      file.raw = result; // update for subsequent commands on the same file
       changes.push({ file: file.fileName, presets: addedToPresets });
     }
   }
 
   if (changes.length === 0) {
-    return {
-      command: cmd,
-      groupName,
-      changes,
-      error: `No matching presets found — group was not added anywhere`,
-    };
+    return { command: cmd, groupName, changes, error: `No matching presets found — group was not added anywhere` };
   }
 
   return { command: cmd, groupName, changes };
@@ -332,8 +308,9 @@ async function main(): Promise<void> {
     .filter((f) => f.endsWith(".yaml"))
     .map((f) => {
       const filePath = path.join(OVERVIEWS_DIR, f);
-      const doc = yaml.load(fs.readFileSync(filePath, "utf8")) as YamlValue;
-      return { filePath, fileName: f, doc, presets: getPresetRefs(doc) };
+      const raw = fs.readFileSync(filePath, "utf8");
+      const doc = yaml.load(raw) as YamlValue;
+      return { filePath, fileName: f, raw, presets: extractPresetInfo(doc) };
     });
 
   if (overviewFiles.length === 0) {
@@ -341,21 +318,18 @@ async function main(): Promise<void> {
     process.exit(0);
   }
 
-  // Apply commands
+  // Apply commands (each command updates file.raw in-place for chaining)
+  const originalRaws = new Map(overviewFiles.map((f) => [f.fileName, f.raw]));
   const results: ApplyResult[] = [];
   for (const cmd of commands) {
     console.log(`Applying: ${cmd.raw}`);
     results.push(applyCommand(cmd, overviewFiles, groupsMap));
   }
 
-  // Write modified files
-  const modifiedFiles = new Set(
-    results.flatMap((r) => r.changes.map((c) => c.file))
-  );
+  // Write files whose raw content changed
   for (const file of overviewFiles) {
-    if (modifiedFiles.has(file.fileName)) {
-      const dumped = yaml.dump(file.doc, YAML_DUMP_OPTIONS);
-      fs.writeFileSync(file.filePath, dumped, "utf8");
+    if (file.raw !== originalRaws.get(file.fileName)) {
+      fs.writeFileSync(file.filePath, file.raw, "utf8");
       console.log(`Wrote ${file.fileName}`);
     }
   }
