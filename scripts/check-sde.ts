@@ -535,6 +535,8 @@ async function main(): Promise<void> {
     });
     console.log(`Created PR #${pr.number}: ${pr.html_url}`);
   }
+
+  process.exit(0);
 }
 
 // ---------------------------------------------------------------------------
