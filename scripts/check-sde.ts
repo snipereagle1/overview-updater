@@ -159,8 +159,13 @@ function loadGroupsCache(buildNumber: number): Map<number, Group> | null {
 }
 
 function saveGroupsCache(buildNumber: number, groups: Map<number, Group>): void {
-  const cache: GroupsCache = { buildNumber, groups: [...groups.values()] };
-  fs.writeFileSync(GROUPS_CACHE_FILE, JSON.stringify(cache), "utf8");
+  try {
+    fs.mkdirSync(path.dirname(GROUPS_CACHE_FILE), { recursive: true });
+    const cache: GroupsCache = { buildNumber, groups: [...groups.values()] };
+    fs.writeFileSync(GROUPS_CACHE_FILE, JSON.stringify(cache), "utf8");
+  } catch {
+    // Non-fatal — cache is a local dev convenience, not required in CI
+  }
 }
 
 async function downloadGroupsMap(buildNumber: number): Promise<Map<number, Group>> {
