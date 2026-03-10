@@ -509,19 +509,32 @@ async function main(): Promise<void> {
     parents: [baseSha],
   });
 
-  await octokit.git.updateRef({ owner, repo, ref: `heads/${branchName}`, sha: newCommit.sha });
+  await octokit.git.updateRef({ owner, repo, ref: `heads/${branchName}`, sha: newCommit.sha, force: true });
   console.log(`Committed changes to ${branchName}`);
 
-  const { data: pr } = await octokit.pulls.create({
+  // Check if a PR already exists for this branch
+  const { data: existingPrs } = await octokit.pulls.list({
     owner,
     repo,
-    title: `chore: SDE update to build ${currentBuild}`,
-    head: branchName,
-    base: "main",
-    body: prBody,
+    head: `${owner}:${branchName}`,
+    state: "open",
   });
 
-  console.log(`Created PR #${pr.number}: ${pr.html_url}`);
+  if (existingPrs.length > 0) {
+    const pr = existingPrs[0];
+    await octokit.pulls.update({ owner, repo, pull_number: pr.number, body: prBody });
+    console.log(`Updated existing PR #${pr.number}: ${pr.html_url}`);
+  } else {
+    const { data: pr } = await octokit.pulls.create({
+      owner,
+      repo,
+      title: `chore: SDE update to build ${currentBuild}`,
+      head: branchName,
+      base: "main",
+      body: prBody,
+    });
+    console.log(`Created PR #${pr.number}: ${pr.html_url}`);
+  }
 }
 
 // ---------------------------------------------------------------------------
