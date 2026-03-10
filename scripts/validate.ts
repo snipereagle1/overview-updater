@@ -12,51 +12,15 @@
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import https from "https";
-import http from "http";
 import yaml from "js-yaml";
-import yauzl from "yauzl";
+import { fetchCurrentBuildNumber, loadGroupsMap } from "./sde-client.js";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const OVERVIEWS_DIR = path.join(REPO_ROOT, "overviews");
 
-const SDE_ZIP_URL =
-  "https://developers.eveonline.com/static-data/eve-online-static-data-latest-jsonl.zip";
-
-// ---------------------------------------------------------------------------
-// HTTP helpers (same as check-sde.ts, duplicated to keep scripts standalone)
-// ---------------------------------------------------------------------------
-
-function fetchBuffer(url: string): Promise<Buffer> {
-  return new Promise((resolve, reject) => {
-    const get = url.startsWith("https") ? https.get : http.get;
-    get(url, (res) => {
-      if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
-        resolve(fetchBuffer(res.headers.location));
-        return;
-      }
-      if (!res.statusCode || res.statusCode >= 400) {
-        reject(new Error(`HTTP ${res.statusCode} for ${url}`));
-        return;
-      }
-      const chunks: Buffer[] = [];
-      res.on("data", (c: Buffer) => chunks.push(c));
-      res.on("end", () => resolve(Buffer.concat(chunks)));
-      res.on("error", reject);
-    }).on("error", reject);
-  });
-}
-
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
-
-interface Group {
-  _key: number;
-  name: { en: string };
-  categoryID: number;
-  published: boolean;
-}
 
 type YamlValue =
   | string
@@ -65,59 +29,6 @@ type YamlValue =
   | null
   | YamlValue[]
   | { [k: string]: YamlValue };
-
-// ---------------------------------------------------------------------------
-// Parse groups from zip
-// ---------------------------------------------------------------------------
-
-async function loadGroupsMap(): Promise<Map<number, Group>> {
-  console.log("Downloading SDE zip for validation…");
-  const zipBuffer = await fetchBuffer(SDE_ZIP_URL);
-  console.log(`Downloaded ${(zipBuffer.length / 1024 / 1024).toFixed(1)} MB`);
-
-  return new Promise((resolve, reject) => {
-    yauzl.fromBuffer(zipBuffer, { lazyEntries: true }, (err, zipfile) => {
-      if (err || !zipfile) return reject(err ?? new Error("No zipfile"));
-
-      const groups = new Map<number, Group>();
-
-      zipfile.readEntry();
-      zipfile.on("entry", (entry: yauzl.Entry) => {
-        if (!entry.fileName.endsWith("groups.jsonl")) {
-          zipfile.readEntry();
-          return;
-        }
-        zipfile.openReadStream(entry, (streamErr, stream) => {
-          if (streamErr || !stream) return reject(streamErr ?? new Error("No stream"));
-          const chunks: Buffer[] = [];
-          stream.on("data", (c: Buffer) => chunks.push(c));
-          stream.on("end", () => {
-            const text = Buffer.concat(chunks).toString("utf8");
-            for (const line of text.split("\n")) {
-              const trimmed = line.trim();
-              if (!trimmed) continue;
-              try {
-                const g = JSON.parse(trimmed) as Group;
-                groups.set(g._key, g);
-              } catch {
-                // skip malformed lines
-              }
-            }
-            resolve(groups);
-          });
-          stream.on("error", reject);
-        });
-      });
-
-      zipfile.on("end", () => {
-        if (groups.size === 0) {
-          reject(new Error("groups.jsonl not found in SDE zip"));
-        }
-      });
-      zipfile.on("error", reject);
-    });
-  });
-}
 
 // ---------------------------------------------------------------------------
 // Extract group IDs from a YAML doc
@@ -153,7 +64,8 @@ function extractGroupIds(doc: YamlValue): number[] {
 // ---------------------------------------------------------------------------
 
 async function main(): Promise<void> {
-  const groupsMap = await loadGroupsMap();
+  const buildNumber = await fetchCurrentBuildNumber();
+  const groupsMap = await loadGroupsMap(buildNumber);
   console.log(`Loaded ${groupsMap.size} groups from SDE`);
 
   const overviewFiles = fs

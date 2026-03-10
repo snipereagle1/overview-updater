@@ -1,0 +1,93 @@
+name: PR Comment Commands
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  pr-command:
+    name: Process /add-group command
+    runs-on: ubuntu-latest
+
+    # Only run on PR comments that contain /add-group
+    if: >
+      github.event.issue.pull_request != null &&
+      contains(github.event.comment.body, '/add-group')
+
+    steps:
+      - name: Check commenter permissions
+        id: check-perms
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PERM=$(gh api repos/${{ github.repository }}/collaborators/${{ github.event.comment.user.login }}/permission --jq '.permission' 2>/dev/null || echo "none")
+          echo "permission=$PERM" >> $GITHUB_OUTPUT
+          if [[ "$PERM" != "write" && "$PERM" != "admin" && "$PERM" != "maintain" ]]; then
+            echo "User ${{ github.event.comment.user.login }} does not have write access (permission: $PERM). Skipping."
+            exit 0
+          fi
+
+      - name: React to comment (acknowledge)
+        if: steps.check-perms.outputs.permission != 'none'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api repos/${{ github.repository }}/issues/comments/${{ github.event.comment.id }}/reactions \
+            --method POST \
+            --field content=eyes
+
+      - name: Get PR branch
+        id: pr-info
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BRANCH=$(gh pr view ${{ github.event.issue.number }} --repo ${{ github.repository }} --json headRefName -q .headRefName)
+          echo "branch=$BRANCH" >> $GITHUB_OUTPUT
+
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.pr-info.outputs.branch }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Set up Node.js (LTS)
+        uses: actions/setup-node@v4
+        with:
+          node-version: "lts/*"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run command
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          COMMENT_BODY: ${{ github.event.comment.body }}
+          PR_NUMBER: ${{ github.event.issue.number }}
+        run: pnpm exec tsx scripts/pr-command.ts
+
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add overviews/
+          git diff --staged --quiet || git commit -m "chore: apply /add-group commands from PR comment"
+          git push
+
+      - name: React to comment (done)
+        if: success()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api repos/${{ github.repository }}/issues/comments/${{ github.event.comment.id }}/reactions \
+            --method POST \
+            --field content="+1"
