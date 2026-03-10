@@ -39,7 +39,7 @@ jobs:
         run: |
           gh api repos/${{ github.repository }}/issues/comments/${{ github.event.comment.id }}/reactions \
             --method POST \
-            --field content=eyes
+            --raw-field content=eyes
 
       - name: Get PR branch
         id: pr-info
@@ -90,4 +90,4 @@ jobs:
         run: |
           gh api repos/${{ github.repository }}/issues/comments/${{ github.event.comment.id }}/reactions \
             --method POST \
-            --field content="+1"
+            --raw-field content="+1"
