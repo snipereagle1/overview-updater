@@ -438,6 +438,7 @@ presets:
           - 2001
           - 2005
           - 2020
+          - 4902
   - - '% friendly: logistic'
     - - - alwaysShownStates
         - - 11
@@ -856,6 +857,7 @@ presets:
           - 863
           - 864
           - 1201
+          - 4902
   - - '# hostile: antibombers (!)'
     - - - alwaysShownStates
         - []
@@ -998,6 +1000,7 @@ presets:
           - 1538
           - 1972
           - 2001
+          - 4902
   - - defaultall
     - - - groups
         - - 6
@@ -1535,6 +1538,7 @@ presets:
           - 4477
           - 4494
           - 4499
+          - 4902
   - - vile rat
     - - - alwaysShownStates
         - - 12
@@ -1631,6 +1635,7 @@ presets:
           - 4548
           - 4549
           - 4594
+          - 4902
   - - '# hostile: dictors'
     - - - alwaysShownStates
         - - 16
@@ -1747,6 +1752,7 @@ presets:
           - 1527
           - 1534
           - 1972
+          - 4902
   - - ~ hostile brackets
     - - - alwaysShownStates
         - []
@@ -2027,6 +2033,7 @@ presets:
           - 2016
           - 2017
           - 2020
+          - 4902
   - - '*  --- basic travel'
     - - - alwaysShownStates
         - []
@@ -2358,6 +2365,7 @@ presets:
           - 1538
           - 1972
           - 2020
+          - 4902
   - - '% friendly: sc/t'
     - - - alwaysShownStates
         - - 11
@@ -2667,6 +2675,7 @@ presets:
           - 1691
           - 1692
           - 1972
+          - 4902
   - - '# hostile: cruisers'
     - - - alwaysShownStates
         - []
@@ -3111,6 +3120,7 @@ presets:
           - 4477
           - 4494
           - 4499
+          - 4902
   - - Metenox/Skyhook
     - - - alwaysShownStates
         - - 9
@@ -3167,6 +3177,7 @@ presets:
           - 864
           - 963
           - 1972
+          - 4902
   - - '# hostile: logistics'
     - - - alwaysShownStates
         - []
@@ -3451,6 +3462,7 @@ presets:
           - 1665
           - 1666
           - 1667
+          - 4902
   - - ~ skirmish brackets
     - - - alwaysShownStates
         - []
@@ -3737,6 +3749,7 @@ presets:
           - 2015
           - 2016
           - 2017
+          - 4902
   - - '^ extra: podsaver (!)'
     - - - filteredStates
         - []
@@ -4173,6 +4186,7 @@ presets:
           - 1998
           - 2006
           - 2020
+          - 4902
   - - '% friendly: recons'
     - - - alwaysShownStates
         - - 11
@@ -5043,6 +5057,7 @@ presets:
           - 4093
           - 4107
           - 4137
+          - 4902
   - - '+ pve: salvage/loot'
     - - - alwaysShownStates
         - []
@@ -5495,6 +5510,7 @@ presets:
           - 2016
           - 2017
           - 2020
+          - 4902
   - - '# hostile: supercarriers'
     - - - alwaysShownStates
         - []
@@ -5881,6 +5897,7 @@ presets:
           - 1972
           - 2001
           - 2020
+          - 4902
   - - '% friendly: dictors'
     - - - alwaysShownStates
         - - 11
@@ -6080,6 +6097,7 @@ presets:
           - 2016
           - 2017
           - 2020
+          - 4902
   - - '# hostile: caps'
     - - - alwaysShownStates
         - []
@@ -6555,6 +6573,7 @@ presets:
           - 2016
           - 2017
           - 2020
+          - 4902
   - - '# hostile: fax'
     - - - alwaysShownStates
         - []
@@ -6849,6 +6868,7 @@ presets:
           - 2016
           - 2017
           - 2020
+          - 4902
   - - '% friendly: capitals'
     - - - alwaysShownStates
         - - 11
@@ -7197,6 +7217,7 @@ presets:
           - 1972
           - 4034
           - 4036
+          - 4902
   - - '#  - ships only'
     - - - alwaysShownStates
         - []
@@ -7259,6 +7280,7 @@ presets:
           - 1548
           - 1972
           - 2001
+          - 4902
   - - '^ extra: align points'
     - - - alwaysShownStates
         - []

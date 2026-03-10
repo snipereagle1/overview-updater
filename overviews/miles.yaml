@@ -633,6 +633,7 @@ presets:
           - 4656
           - 4673
           - 4736
+          - 4902
   - - <color=0xFFFF5900>✜ PVE</color>
     - - - alwaysShownStates
         - []
@@ -1106,6 +1107,7 @@ presets:
           - 4655
           - 4656
           - 4673
+          - 4902
   - - <color=0xFFC7A720>✜ Incursion</color>
     - - - alwaysShownStates
         - []
@@ -1456,6 +1458,7 @@ presets:
           - 4655
           - 4656
           - 4673
+          - 4902
   - - '<color=0xFF00BFFF>♥ Blues: SC/T</color>'
     - - - alwaysShownStates
         - - 11
@@ -1553,6 +1556,7 @@ presets:
           - 2001
           - 4575
           - 4594
+          - 4902
   - - <color=0xFF00BFFF>♥ Ships Fleet</color>
     - - - alwaysShownStates
         - - 11
@@ -1632,6 +1636,7 @@ presets:
           - 1972
           - 2001
           - 4594
+          - 4902
   - - <color=0xFFFFFFFF>✈ Pure Travel</color>
     - - - alwaysShownStates
         - []
@@ -2171,6 +2176,7 @@ presets:
           - 4035
           - 4036
           - 4594
+          - 4902
   - - '<color=0xFF00BFFF>♥ Blues: Carriers</color>'
     - - - alwaysShownStates
         - - 11
@@ -2683,6 +2689,7 @@ presets:
           - 4655
           - 4656
           - 4673
+          - 4902
   - - '<color=0xFF00BFFF>♥ Blues: Capitals</color>'
     - - - alwaysShownStates
         - - 11
@@ -3307,6 +3314,7 @@ presets:
           - 4656
           - 4673
           - 4736
+          - 4902
   - - <color=0xFF00FF00>☣ Dead Bodies</color>
     - - - alwaysShownStates
         - []
@@ -3422,6 +3430,7 @@ presets:
           - 4107
           - 4501
           - 4594
+          - 4902
   - - '<color=0xFFFF4242>✛ Hostile: Fax</color>'
     - - - alwaysShownStates
         - []
@@ -3669,6 +3678,7 @@ presets:
           - 2020
           - 4081
           - 4594
+          - 4902
   - - <color=0xFFCCCCCC>❒ Loot & salvage</color>
     - - - alwaysShownStates
         - []
@@ -4234,6 +4244,7 @@ presets:
           - 4655
           - 4656
           - 4673
+          - 4902
   - - <color=0xFFCCCCCC>ↂ Collidables</color>
     - - - alwaysShownStates
         - []
@@ -4847,6 +4858,7 @@ presets:
           - 4655
           - 4656
           - 4673
+          - 4902
   - - '<color=0xFFFF4242>✛ Hostile: Battlecruisers</color>'
     - - - alwaysShownStates
         - []
@@ -4866,6 +4878,7 @@ presets:
           - 863
           - 864
           - 1201
+          - 4902
   - - '<color=0xFFFF4242>ム Pochven: Drifter & Sleepers</color>'
     - - - alwaysShownStates
         - []
@@ -4953,6 +4966,7 @@ presets:
           - 2001
           - 4575
           - 4594
+          - 4902
   - - '<color=0xFF00BFFF>♥ Blues: Dictors/Booshers</color>'
     - - - alwaysShownStates
         - - 11
@@ -5144,6 +5158,7 @@ presets:
           - 1972
           - 2001
           - 4594
+          - 4902
   - - '<color=0xFFFF4242>✛ Hostile: Flag Cruisers</color>'
     - - - alwaysShownStates
         - []
@@ -5587,14 +5602,9 @@ presets:
           - 4037
           - 4053
           - 4073
+          - 4079
           - 4081
           - 4088
-          - 4431
-          - 4432
-          - 4433
-          - 4434
-          - 4594
-          - 4079
           - 4093
           - 4105
           - 4106
@@ -5602,6 +5612,10 @@ presets:
           - 4128
           - 4130
           - 4137
+          - 4431
+          - 4432
+          - 4433
+          - 4434
           - 4477
           - 4494
           - 4499
@@ -5616,6 +5630,7 @@ presets:
           - 4574
           - 4576
           - 4577
+          - 4594
           - 4636
           - 4637
           - 4638
@@ -5631,6 +5646,7 @@ presets:
           - 4655
           - 4656
           - 4673
+          - 4902
   - - '<color=0xFFFF4242>✛ Hostile: Dreads</color>'
     - - - alwaysShownStates
         - []
@@ -5727,6 +5743,7 @@ presets:
           - 1972
           - 2001
           - 4594
+          - 4902
   - - '<color=0xFFFF4242>✛ Hostiles: All (hisec criminals)</color>'
     - - - alwaysShownStates
         - - 9
@@ -5806,6 +5823,7 @@ presets:
           - 1972
           - 2001
           - 4594
+          - 4902
   - - '<color=0xFF00BFFF>♥ Blues: Flag</color>'
     - - - alwaysShownStates
         - - 11
@@ -5992,6 +6010,7 @@ presets:
           - 4036
           - 4055
           - 4594
+          - 4902
   - - '<color=0xFFFF4242>✛ Hostile: Anti-Support</color>'
     - - - alwaysShownStates
         - []
@@ -6533,6 +6552,7 @@ presets:
           - 4656
           - 4673
           - 4736
+          - 4902
   - - '<color=0xFF61FFC5>ↁ DSCAN: Ships & Wrecks</color>'
     - - - alwaysShownStates
         - []
@@ -6603,6 +6623,7 @@ presets:
           - 1972
           - 2001
           - 4594
+          - 4902
   - - '<color=0xFFFF4242>✛ Hostile: Supercarriers</color>'
     - - - alwaysShownStates
         - []
@@ -6638,6 +6659,7 @@ presets:
           - 863
           - 864
           - 963
+          - 4902
 shipLabelOrder:
   - ship type
   - pilot name
